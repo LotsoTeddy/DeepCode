@@ -1,8 +1,6 @@
 from typing import Dict, List
 
 import litellm
-from litellm import batch_completion
-
 from core.bus.DataBus import DataBus
 from core.config.config import (
     LLM_API_BASE,
@@ -12,7 +10,15 @@ from core.config.config import (
     LLM_PREFIX,
 )
 from core.fs.DirNode import DirNode
-from core.model.prompts import *
+from core.model.prompts import (
+    DIR,
+    FILE,
+    SUMMARY_CONS,
+    SUMMARY_DIR,
+    SUMMARY_FILE,
+    SUMMARY_PROS,
+)
+from litellm import batch_completion
 
 
 class LLM:
@@ -30,17 +36,17 @@ class LLM:
 
     def _build_summary_dir_message(self, node: DirNode):
         repo = self.data_bus.repo
-        system_prompt = DIR_PROCESS_SYS_PROMPT.format(repo=repo, dirpath=node.pure_path)
+        system_prompt = SUMMARY_DIR.format(repo=repo, dirpath=node.pure_path)
 
         user_prompt = ""
         for sub_node in list(node.children):
             if sub_node.isdir:
-                user_prompt += SUB_DIR_SUMMARY.format(
-                    dirname=sub_node.name, smmary=sub_node.summary
+                user_prompt += DIR.format(
+                    dirname=sub_node.name, summary=sub_node.summary
                 )
         for sub_node in list(node.children):
             if sub_node.isfile:
-                user_prompt += SINGLE_FILE.format(
+                user_prompt += FILE.format(
                     filename=sub_node.name.split("/")[-1],
                     filepath=sub_node.pure_path,
                     content=sub_node.content,
@@ -63,7 +69,7 @@ class LLM:
         messages = []
 
         for node in nodes:
-            file = SINGLE_FILE.format(
+            file = FILE.format(
                 filename=node.name,
                 filepath=node.pure_path,
                 content=node.content,
@@ -71,7 +77,7 @@ class LLM:
             message = [
                 {
                     "role": "system",
-                    "content": FILE_PROCESS_SYS_PROMPT.format(repo=self.data_bus.repo),
+                    "content": SUMMARY_FILE.format(repo=self.data_bus.repo),
                 },
                 {
                     "role": "user",
