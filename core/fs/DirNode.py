@@ -1,7 +1,6 @@
 import os
 
 from anytree import Node
-
 from core.config import FS_IGNORE_CHARS, FS_SUPPORTED_SUFFIX
 
 
@@ -35,7 +34,8 @@ class DirNode(Node):
 
     def _check_file_need_content(self):
         if self.pure_path.endswith(tuple(self.supported_suffix)):
-            if any(char in self.pure_path for char in self.ignore_chars):
+            path_without_suffix, _ = os.path.splitext(self.pure_path)
+            if any(char in path_without_suffix for char in self.ignore_chars):
                 return False
             return True
         return False
