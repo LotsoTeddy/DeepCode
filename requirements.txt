@@ -1,0 +1,5 @@
+lark-oapi>=1.4.8
+easydict
+anytree
+litellm
+dotenv
