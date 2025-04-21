@@ -1,17 +1,15 @@
 import json
 
 import lark_oapi as lark
-from lark_oapi.api.im.v1 import *
-
-from core.bus.DataBus import DataBus
 from core.config import LARK_APP_ID, LARK_APP_SECRET
 from core.templates.card import card_template
+from lark_oapi.api.im.v1 import *
 
 
 class BotProcessor(object):
     """docstring for BotProcessor."""
 
-    def __init__(self, data_bus: DataBus, chat_id: str):
+    def __init__(self, data_bus, chat_id: str):
         self.data_bus = data_bus
 
         self.lark_client = (

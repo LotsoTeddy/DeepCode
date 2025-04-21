@@ -3,7 +3,6 @@ import threading
 
 import lark_oapi as lark
 from core.config import LARK_APP_ID, LARK_APP_SECRET
-from core.config.config import LARK_APP_ID, LARK_APP_SECRET
 from core.worker import Worker
 from lark_oapi.api.im.v1 import *
 

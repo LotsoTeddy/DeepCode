@@ -5,6 +5,7 @@ import lark_oapi as lark
 import requests
 from core.bus.DataBus import DataBus
 from core.config.config import LARK_APP_ID, LARK_APP_SECRET, LARK_CLOUD_FOLDER_ID
+from core.event import event
 from lark_oapi.api.docx.v1 import *
 from lark_oapi.api.drive.v1 import *
 from lark_oapi.api.im.v1 import *
@@ -46,6 +47,7 @@ class DocProcessor(object):
             print(f"Request failed with status code: {response.status_code}")
             return None
 
+    @event("上传至飞书云空间")
     def _upload_to_lark(self, local_path: str):
         file_size = os.path.getsize(local_path)
 
@@ -66,6 +68,7 @@ class DocProcessor(object):
         response = requests.request("POST", url, headers=headers, data=multi_form)
         return response.json().get("data").get("file_token")
 
+    @event("转化为飞书文档")
     def _convert_to_lark_doc(self, file_token: str, filename: str):
         request: CreateImportTaskRequest = (
             CreateImportTaskRequest.builder()
@@ -96,6 +99,7 @@ class DocProcessor(object):
             return
         return response.data.ticket
 
+    @event("转化状态查询")
     def _check_convert_status(self, ticket: str):
         while True:
             request: GetImportTaskRequest = (
@@ -124,16 +128,12 @@ class DocProcessor(object):
         Returns:
             str: The lark cloud file id.
         """
-        self.event_bus.event = {"content": "上传至飞书云空间", "mode": "append"}
         file_token = self._upload_to_lark(local_path=local_path)
 
-        self.event_bus.event = {"content": "转化为飞书文档", "mode": "append"}
         ticket = self._convert_to_lark_doc(
             file_token=file_token,
             filename=f"{self.data_bus.owner}/{self.data_bus.repo}分析文档",
         )
 
         lark_file_id = self._check_convert_status(ticket=ticket)
-        self.event_bus.event = {"content": "转化完成", "mode": "append"}
-
         return lark_file_id

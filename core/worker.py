@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from core.bus.DataBus import DataBus
 from core.bus.EventBus import EventBus
@@ -29,7 +30,7 @@ class Worker(object):
 
     def _clean(self):
         # NOTE(nkfyz): we cannot remove the tmporary lark cloud file, cause we have no permission
-        os.remove(self.data_bus.repo_local_path)
+        shutil.rmtree(self.data_bus.repo_local_path)
         os.remove(self.data_bus.md_local_path)
 
     def run(self, url: str):

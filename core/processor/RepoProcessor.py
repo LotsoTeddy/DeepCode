@@ -3,9 +3,9 @@ import threading
 from collections import defaultdict
 
 from anytree import LevelOrderIter, PostOrderIter
-
 from core.bus.DataBus import DataBus
 from core.config.config import BYTEDANCE_HTTP_PROXY, TEMPRORY_DIR
+from core.event import event
 from core.fs.DirNode import DirNode
 from core.model.llm import LLM
 from core.utils import read_file
@@ -27,6 +27,7 @@ class RepoProcessor(object):
         self.root_node = None
         self.filetree = {}
 
+    @event("构建文件系统树")
     def _build_filetree(self):
         root_path = self.local_path
         root_node = DirNode(name=f"{self.repo}", parent=None, real_path=root_path)
@@ -49,7 +50,7 @@ class RepoProcessor(object):
                 path_to_node[child_path] = child_node
         self.root_node = root_node
 
-    @self.event_bus.event("拉取仓库", mode="append")
+    @event("拉取远程仓库")
     def _clone_repo(self):
         remote_path = f"https://github.com/{self.owner}/{self.repo}.git"
         self.data_bus.repo_remote_url = remote_path.replace(".git", "")
@@ -59,6 +60,7 @@ class RepoProcessor(object):
             f"git clone {remote_path} {self.local_path} -q -c http.proxy={BYTEDANCE_HTTP_PROXY}"
         )
 
+    @event("等待生成目录摘要中")
     def _summary_dir(self):
         root_node = self.root_node
         depth_map = defaultdict(list)
@@ -79,6 +81,7 @@ class RepoProcessor(object):
             for t in threads:
                 t.join()
 
+    @event("等待生成文件摘要中")
     def _summary_file(self):
         root_node = self.root_node
         nodes = []
@@ -104,6 +107,7 @@ class RepoProcessor(object):
             path_to_summary[node.pure_path] = node.summary
         self.filetree = {k: path_to_summary[k] for k in sorted(path_to_summary)}
 
+    @event("等待生成仓库优缺点分析中")
     def _summary_cons_and_pros(self):
         threads = []
         for f in [self.llm.summary_cons, self.llm.summary_pros]:
@@ -127,18 +131,12 @@ class RepoProcessor(object):
 
         if local_path is None:
             self.local_path = os.path.join(TEMPRORY_DIR, self.repo)
-            self.event_bus.event = {"content": "拉取仓库", "mode": "append"}
             self._clone_repo()
         else:
             self.local_path = local_path
 
-        self.event_bus.event = {"content": "构建文件系统树", "mode": "append"}
         self._build_filetree()
-
-        self.event_bus.event = {"content": "生成摘要", "mode": "append"}
         self._summary_repo()
-
-        self.event_bus.event = {"content": "生成仓库优缺点分析", "mode": "append"}
         self._summary_cons_and_pros()
 
         self._write_to_data_bus()

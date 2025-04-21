@@ -2,7 +2,8 @@ import os
 from string import Template
 
 from core.bus.DataBus import DataBus
-from core.config.config import TEMPRORY_DIR
+from core.config import TEMPRORY_DIR
+from core.event import event
 from core.utils import get_time
 
 
@@ -64,10 +65,10 @@ class MdProcessor(object):
 
         self.data_bus.md_local_path = self.dump_path
 
+    @event("构建Markdown文件")
     def process(self):
         self.dump_path = f"{TEMPRORY_DIR}/{self.data_bus.owner}_{self.data_bus.repo}.md"
 
-        self.event_bus.event = {"content": "构建Markdown文件", "mode": "append"}
         self.data_bus.filetree = self._build_filetree(self.data_bus.filetree)
         self.data_bus.end_time = get_time()
         md_string = self._build_md_string(self.data_bus.dump())
